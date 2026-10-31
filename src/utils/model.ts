@@ -1,4 +1,4 @@
-import { pipeline, TextGenerationPipeline } from "@huggingface/transformers";
+import { pipeline, Text2TextGenerationPipeline } from "@huggingface/transformers";
 
 export interface ModelInfo {
   name: string;
@@ -11,22 +11,24 @@ export interface ModelInfo {
   contextLength: number;
   trainingData: string;
   size: string;
+  task: string;
 }
 
 export const MODEL_INFO: ModelInfo = {
-  name: "DistilGPT-2",
-  parameters: "~82 Million",
-  architecture: "Transformer Decoder (GPT-2)",
-  layers: 6,
-  hiddenSize: 768,
-  attentionHeads: 12,
-  vocabularySize: 50257,
-  contextLength: 1024,
-  trainingData: "WebText (8M documents, ~40GB)",
-  size: "~320 MB (quantized)",
+  name: "FLAN-T5-Small",
+  parameters: "80 Million",
+  architecture: "Encoder-Decoder Transformer (T5)",
+  layers: 8,
+  hiddenSize: 512,
+  attentionHeads: 6,
+  vocabularySize: 32128,
+  contextLength: 512,
+  trainingData: "Mixed instruction-tuned data (C4, FLAN collections)",
+  size: "~300 MB",
+  task: "Text-to-Text (Instruction Following)",
 };
 
-let generator: TextGenerationPipeline | null = null;
+let generator: Text2TextGenerationPipeline | null = null;
 let isLoading = false;
 
 export type ProgressCallback = (progress: {
@@ -37,10 +39,9 @@ export type ProgressCallback = (progress: {
 
 export async function loadModel(
   onProgress?: ProgressCallback
-): Promise<TextGenerationPipeline> {
+): Promise<Text2TextGenerationPipeline> {
   if (generator) return generator;
   if (isLoading) {
-    // Wait for loading to complete
     while (isLoading) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -50,23 +51,25 @@ export async function loadModel(
   isLoading = true;
 
   try {
-    onProgress?.({ status: "Initializing model...", progress: 0 });
+    onProgress?.({ status: "Initializing FLAN-T5-Small...", progress: 0 });
 
     generator = await pipeline(
-      "text-generation",
-      "Xenova/distilgpt2",
+      "text2text-generation",
+      "Xenova/flan-t5-small",
       {
         progress_callback: (data: any) => {
           if (data.status === "download" || data.status === "progress") {
             const progress = data.progress || 0;
             const file = data.file || "";
             onProgress?.({
-              status: `Loading model weights...`,
+              status: `Downloading ${file || "model files"}...`,
               progress: Math.min(progress, 100),
               file,
             });
           } else if (data.status === "ready") {
             onProgress?.({ status: "Model ready!", progress: 100 });
+          } else if (data.status === "initiate") {
+            onProgress?.({ status: "Loading model into memory...", progress: 90 });
           }
         },
       }
@@ -80,13 +83,6 @@ export async function loadModel(
   } finally {
     isLoading = false;
   }
-}
-
-export function formatPrompt(question: string): string {
-  // Format the question as a prompt for the model
-  // DistilGPT2 works best with completion-style prompts
-  const prompt = `Q: ${question}\nA:`;
-  return prompt;
 }
 
 export async function generateResponse(
@@ -103,32 +99,18 @@ export async function generateResponse(
     throw new Error("Model not loaded. Please wait for the model to load.");
   }
 
-  const prompt = formatPrompt(question);
-
-  const result = await generator(prompt, {
-    max_new_tokens: options?.maxLength || 100,
+  // FLAN-T5 is instruction-tuned, so we can just pass the question directly
+  const result = await generator(question, {
+    max_new_tokens: options?.maxLength || 150,
     temperature: options?.temperature || 0.7,
     top_k: options?.topK || 50,
     top_p: options?.topP || 0.95,
     repetition_penalty: options?.repetitionPenalty || 1.2,
     do_sample: true,
-    num_return_sequences: 1,
   });
 
-  // Extract the generated text after "A:"
-  let response = result[0].generated_text;
-  const aIndex = response.indexOf("A:");
-  if (aIndex !== -1) {
-    response = response.substring(aIndex + 2).trim();
-  }
-
-  // Clean up the response - remove any trailing Q: that might indicate the model is generating another question
-  const nextQ = response.indexOf("\nQ:");
-  if (nextQ !== -1) {
-    response = response.substring(0, nextQ).trim();
-  }
-
-  return response || "I'm not sure how to answer that. Could you try rephrasing?";
+  const response = result[0]?.generated_text?.trim();
+  return response || "I'm not sure how to answer that. Could you try rephrasing your question?";
 }
 
 export function isModelLoaded(): boolean {
