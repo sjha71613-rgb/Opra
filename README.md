@@ -1,6 +1,17 @@
 # OPRA - Hand-Coded Language Model
 
-**A transformer language model built entirely from scratch in TypeScript. No external ML libraries. No pre-trained weights. No wrappers.**
+<div align="center">
+
+**A transformer language model built entirely from scratch in TypeScript**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61dafb.svg)](https://reactjs.org/)
+[![Build](https://github.com/YOUR_USERNAME/opra/actions/workflows/build.yml/badge.svg)](https://github.com/YOUR_USERNAME/opra/actions)
+
+*No external ML libraries • No pre-trained weights • 100% hand-coded • Runs in browser*
+
+</div>
 
 ## 🎯 What is OPRA?
 
