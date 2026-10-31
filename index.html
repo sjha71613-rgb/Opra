@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -24,7 +24,7 @@
       }
       html.dark,
       html.dark body {
-        background-color: #1a1a1a !important;
+        background-color: #09090b !important;
         color: #ffffff;
       }
     </style>
@@ -50,8 +50,8 @@
             }
           });
         } else {
-          // 非 iframe 环境，使用默认 light 主题
-          applyThemeToDOM("light");
+          // Default to dark theme
+          applyThemeToDOM("dark");
         }
       })();
     </script>

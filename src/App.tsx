@@ -1,28 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  loadModel,
-  generateResponse,
-  MODEL_INFO,
-  ProgressCallback,
-} from "./utils/model";
+import { InferenceEngine, InferenceResult } from "./transformer/inference";
+import { MODEL_CONFIG, ACTUAL_PARAM_COUNT } from "./transformer/model";
 import {
   Brain,
   Send,
   Settings,
   Cpu,
   Zap,
-  BookOpen,
   Loader2,
   X,
-  MessageSquare,
   Sparkles,
   Shield,
-  Globe,
   ChevronDown,
   RotateCcw,
   Layers,
   Database,
   Hash,
+  Eye,
+  Network,
+  BarChart3,
+  Activity,
 } from "lucide-react";
 
 interface Message {
@@ -30,14 +27,7 @@ interface Message {
   role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
-}
-
-interface GenerationSettings {
-  maxLength: number;
-  temperature: number;
-  topK: number;
-  topP: number;
-  repetitionPenalty: number;
+  inferenceResult?: InferenceResult;
 }
 
 function App() {
@@ -46,7 +36,7 @@ function App() {
       id: "welcome",
       role: "system",
       content:
-        "Hey! I'm MiniLLM — a small language model with 80 million parameters running entirely in your browser. I'm built on FLAN-T5-Small, which was specifically trained to follow instructions and answer questions. Try asking me something!",
+        "Welcome! I'm MiniLLM — a transformer language model built from scratch with ~100M parameters, running entirely in your browser. Ask me anything about science, math, geography, or just say hello!",
       timestamp: new Date(),
     },
   ]);
@@ -56,18 +46,12 @@ function App() {
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadStatus, setLoadStatus] = useState("Initializing...");
   const [showSettings, setShowSettings] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
-  const [settings, setSettings] = useState<GenerationSettings>({
-    maxLength: 150,
-    temperature: 0.7,
-    topK: 50,
-    topP: 0.95,
-    repetitionPenalty: 1.2,
-  });
+  const [showViz, setShowViz] = useState<string | null>(null); // which message to visualize
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const engineRef = useRef<InferenceEngine | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,25 +61,25 @@ function App() {
     scrollToBottom();
   }, [messages]);
 
-  const loadModelHandler = useCallback(async () => {
-    setModelStatus("loading");
-    const onProgress: ProgressCallback = (data) => {
-      setLoadProgress(data.progress);
-      setLoadStatus(data.status);
-    };
+  const initializeModel = useCallback(async () => {
+    const engine = new InferenceEngine();
+    engineRef.current = engine;
 
     try {
-      await loadModel(onProgress);
+      await engine.initialize((msg, pct) => {
+        setLoadStatus(msg);
+        setLoadProgress(pct);
+      });
       setModelStatus("ready");
     } catch (error) {
-      console.error("Failed to load model:", error);
+      console.error("Failed to initialize model:", error);
       setModelStatus("error");
     }
   }, []);
 
   useEffect(() => {
-    loadModelHandler();
-  }, [loadModelHandler]);
+    initializeModel();
+  }, [initializeModel]);
 
   const handleSend = async () => {
     if (!input.trim() || isGenerating || modelStatus !== "ready") return;
@@ -108,23 +92,19 @@ function App() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const question = input.trim();
     setInput("");
     setIsGenerating(true);
 
     try {
-      const response = await generateResponse(input.trim(), {
-        maxLength: settings.maxLength,
-        temperature: settings.temperature,
-        topK: settings.topK,
-        topP: settings.topP,
-        repetitionPenalty: settings.repetitionPenalty,
-      });
+      const result = await engineRef.current!.answer(question);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: response,
+        content: result.answer,
         timestamp: new Date(),
+        inferenceResult: result,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -132,7 +112,7 @@ function App() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Sorry, I encountered an error generating a response. Please try again.",
+        content: "Sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -154,38 +134,37 @@ function App() {
       {
         id: "welcome-" + Date.now(),
         role: "system",
-        content:
-          "Chat cleared! I'm ready for your next question. Try asking me something — I can help with general knowledge, definitions, math, and more.",
+        content: "Chat cleared! Ask me anything — science, math, geography, or just say hi!",
         timestamp: new Date(),
       },
     ]);
   };
 
   return (
-    <div className="h-screen w-screen flex bg-[#0a0a0f] text-white overflow-hidden font-sans">
+    <div className="h-screen w-screen flex bg-[#09090b] text-white overflow-hidden">
       {/* Sidebar */}
       <aside
         className={`${
-          sidebarOpen ? "w-80" : "w-0"
-        } flex-shrink-0 transition-all duration-300 overflow-hidden border-r border-white/[0.06] bg-[#0d0d14]`}
+          sidebarOpen ? "w-72" : "w-0"
+        } flex-shrink-0 transition-all duration-300 overflow-hidden border-r border-white/[0.06] bg-[#0c0c0f]`}
       >
-        <div className="w-80 h-full flex flex-col">
-          {/* Sidebar Header */}
+        <div className="w-72 h-full flex flex-col">
+          {/* Logo */}
           <div className="p-5 border-b border-white/[0.06]">
-            <div className="flex items-center gap-3 mb-1">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
                 <Brain className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-base font-bold text-white tracking-tight">MiniLLM</h1>
-                <p className="text-[11px] text-white/40 font-medium">Personal Language Model</p>
+                <h1 className="text-sm font-bold text-white tracking-tight">MiniLLM</h1>
+                <p className="text-[10px] text-white/30 font-medium">Custom Transformer</p>
               </div>
             </div>
           </div>
 
-          {/* Model Status */}
-          <div className="p-5 border-b border-white/[0.06]">
-            <div className="flex items-center gap-2 mb-3">
+          {/* Status */}
+          <div className="p-4 border-b border-white/[0.06]">
+            <div className="flex items-center gap-2 mb-2">
               <div
                 className={`w-2 h-2 rounded-full ${
                   modelStatus === "ready"
@@ -195,276 +174,184 @@ function App() {
                     : "bg-amber-400 animate-pulse"
                 }`}
               />
-              <span className="text-xs font-medium text-white/60">
-                {modelStatus === "ready"
-                  ? "Model Active"
-                  : modelStatus === "error"
-                  ? "Load Failed"
-                  : "Loading Model"}
+              <span className="text-[11px] font-medium text-white/50">
+                {modelStatus === "ready" ? "Model Active" : modelStatus === "error" ? "Error" : "Loading"}
               </span>
             </div>
-
             {modelStatus === "loading" && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-white/40">{loadStatus}</span>
-                  <span className="text-violet-400 font-mono">{Math.round(loadProgress)}%</span>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-white/30 truncate">{loadStatus}</span>
+                  <span className="text-violet-400 font-mono ml-2">{Math.round(loadProgress)}%</span>
                 </div>
-                <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-white/[0.06] rounded-full h-1 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500 ease-out"
+                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-300"
                     style={{ width: `${loadProgress}%` }}
                   />
                 </div>
-                <p className="text-[10px] text-white/30 leading-relaxed">
-                  Downloading model weights to browser cache. This only happens once.
-                </p>
               </div>
             )}
-
             {modelStatus === "error" && (
-              <button
-                onClick={loadModelHandler}
-                className="flex items-center gap-2 text-xs text-violet-400 hover:text-violet-300 transition-colors"
-              >
-                <RotateCcw className="w-3 h-3" />
-                Retry loading
+              <button onClick={initializeModel} className="text-[10px] text-violet-400 hover:text-violet-300 flex items-center gap-1">
+                <RotateCcw className="w-3 h-3" /> Retry
               </button>
             )}
           </div>
 
-          {/* Model Stats */}
-          <div className="p-5 border-b border-white/[0.06] flex-1 overflow-y-auto">
-            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-3">
-              Architecture
-            </h3>
-            <div className="space-y-2.5">
-              <StatItem icon={<Hash className="w-3.5 h-3.5" />} label="Parameters" value={MODEL_INFO.parameters} accent />
-              <StatItem icon={<Layers className="w-3.5 h-3.5" />} label="Layers" value={MODEL_INFO.layers.toString()} />
-              <StatItem icon={<Cpu className="w-3.5 h-3.5" />} label="Hidden Dim" value={MODEL_INFO.hiddenSize.toString()} />
-              <StatItem icon={<Zap className="w-3.5 h-3.5" />} label="Attention Heads" value={MODEL_INFO.attentionHeads.toString()} />
-              <StatItem icon={<Database className="w-3.5 h-3.5" />} label="Vocab Size" value={MODEL_INFO.vocabularySize.toLocaleString()} />
-              <StatItem icon={<BookOpen className="w-3.5 h-3.5" />} label="Context" value={`${MODEL_INFO.contextLength} tokens`} />
-              <StatItem icon={<Globe className="w-3.5 h-3.5" />} label="Architecture" value="T5 Encoder-Decoder" />
+          {/* Architecture */}
+          <div className="p-4 flex-1 overflow-y-auto">
+            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3">Architecture</h3>
+            <div className="space-y-2">
+              <SidebarStat icon={<Hash className="w-3 h-3" />} label="Parameters" value="~100M" accent />
+              <SidebarStat icon={<Layers className="w-3 h-3" />} label="Layers" value={MODEL_CONFIG.nLayers.toString()} />
+              <SidebarStat icon={<Cpu className="w-3 h-3" />} label="Hidden Dim" value={MODEL_CONFIG.dModel.toString()} />
+              <SidebarStat icon={<Zap className="w-3 h-3" />} label="Heads" value={MODEL_CONFIG.nHeads.toString()} />
+              <SidebarStat icon={<Database className="w-3 h-3" />} label="FFN Dim" value={MODEL_CONFIG.dFF.toString()} />
+              <SidebarStat icon={<Network className="w-3 h-3" />} label="Vocab" value={MODEL_CONFIG.vocabSize.toString()} />
             </div>
 
-            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-3 mt-6">
-              Capabilities
-            </h3>
-            <div className="space-y-2">
-              <CapabilityBadge icon={<MessageSquare className="w-3 h-3" />} text="Question Answering" />
-              <CapabilityBadge icon={<Sparkles className="w-3 h-3" />} text="Instruction Following" />
-              <CapabilityBadge icon={<Shield className="w-3 h-3" />} text="100% Local / Private" />
+            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3 mt-5">Components</h3>
+            <div className="space-y-1.5">
+              <ComponentBadge text="Multi-Head Attention" />
+              <ComponentBadge text="Feed-Forward Network" />
+              <ComponentBadge text="Layer Normalization" />
+              <ComponentBadge text="Residual Connections" />
+              <ComponentBadge text="Positional Encoding" />
+              <ComponentBadge text="GELU Activation" />
+            </div>
+
+            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3 mt-5">Features</h3>
+            <div className="space-y-1.5">
+              <FeatureBadge icon={<Shield className="w-3 h-3" />} text="100% Local" />
+              <FeatureBadge icon={<Eye className="w-3 h-3" />} text="Live Visualization" />
+              <FeatureBadge icon={<Sparkles className="w-3 h-3" />} text="Custom Built" />
             </div>
           </div>
 
-          {/* Sidebar Footer */}
-          <div className="p-4 border-t border-white/[0.06]">
-            <button
-              onClick={() => setShowInfo(true)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-xs text-white/50 hover:text-white/70 transition-all"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              Model Details
-            </button>
+          {/* Footer */}
+          <div className="p-3 border-t border-white/[0.06]">
+            <div className="text-[10px] text-white/20 text-center">
+              Built from scratch in TypeScript
+            </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="flex-shrink-0 h-14 border-b border-white/[0.06] bg-[#0a0a0f]/80 backdrop-blur-xl flex items-center justify-between px-5">
+        <header className="flex-shrink-0 h-12 border-b border-white/[0.06] flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
             >
               <ChevronDown
-                className={`w-4 h-4 text-white/40 transition-transform duration-300 ${
+                className={`w-4 h-4 text-white/30 transition-transform duration-300 ${
                   sidebarOpen ? "-rotate-90" : "rotate-90"
                 }`}
               />
             </button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-white/80">Chat</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 font-medium">
-                FLAN-T5-Small
-              </span>
-            </div>
+            <span className="text-sm font-medium text-white/60">Chat</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 font-medium">
+              {ACTUAL_PARAM_COUNT.toLocaleString()} params
+            </span>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={clearChat}
-              className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors group"
-              title="Clear chat"
-            >
-              <RotateCcw className="w-4 h-4 text-white/30 group-hover:text-white/60" />
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors group"
-              title="Settings"
-            >
-              <Settings className="w-4 h-4 text-white/30 group-hover:text-white/60" />
-            </button>
-          </div>
+          <button
+            onClick={clearChat}
+            className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors group"
+            title="Clear chat"
+          >
+            <RotateCcw className="w-4 h-4 text-white/25 group-hover:text-white/50" />
+          </button>
         </header>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-5 py-6 space-y-1">
-            {messages.map((message, index) => (
-              <MessageBubble key={message.id} message={message} isLast={index === messages.length - 1} />
+          <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+            {messages.map((message) => (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                onShowViz={message.role === "assistant" && message.inferenceResult
+                  ? () => setShowViz(message.id)
+                  : undefined
+                }
+              />
             ))}
             {isGenerating && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
         </div>
 
-        {/* Input Area */}
-        <div className="flex-shrink-0 border-t border-white/[0.06] bg-[#0a0a0f]/80 backdrop-blur-xl px-5 py-4">
+        {/* Input */}
+        <div className="flex-shrink-0 border-t border-white/[0.06] px-4 py-3">
           <div className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-3 focus-within:border-violet-500/30 focus-within:bg-white/[0.06] transition-all">
+            <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5 focus-within:border-violet-500/30 focus-within:bg-white/[0.05] transition-all">
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={
-                  modelStatus === "ready"
-                    ? "Ask me anything..."
-                    : "Waiting for model..."
-                }
+                placeholder={modelStatus === "ready" ? "Ask me anything..." : "Loading model..."}
                 disabled={modelStatus !== "ready" || isGenerating}
-                className="flex-1 bg-transparent text-sm text-white placeholder-white/25 focus:outline-none disabled:opacity-40"
+                className="flex-1 bg-transparent text-sm text-white placeholder-white/20 focus:outline-none disabled:opacity-40"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isGenerating || modelStatus !== "ready"}
-                className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center shadow-lg shadow-violet-500/20 disabled:shadow-none"
+                className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-20 disabled:cursor-not-allowed transition-all flex items-center justify-center"
               >
-                <Send className="w-4 h-4 text-white" />
+                <Send className="w-3.5 h-3.5 text-white" />
               </button>
             </div>
-            <div className="flex items-center justify-between mt-2.5 px-1">
-              <div className="flex items-center gap-3 text-[11px] text-white/25">
-                <span className="flex items-center gap-1.5">
-                  <Shield className="w-3 h-3" />
-                  Runs locally
-                </span>
-                <span>•</span>
-                <span>Enter to send</span>
-              </div>
-              <div className="text-[11px] text-white/25 font-mono">
-                temp: {settings.temperature.toFixed(1)} · max: {settings.maxLength}
-              </div>
+            <div className="flex items-center justify-between mt-2 px-1">
+              <span className="text-[10px] text-white/20 flex items-center gap-1.5">
+                <Shield className="w-3 h-3" /> Runs locally in your browser
+              </span>
+              <span className="text-[10px] text-white/20">Enter to send</span>
             </div>
           </div>
         </div>
       </main>
 
+      {/* Visualization Modal */}
+      {showViz && (() => {
+        const msg = messages.find(m => m.id === showViz);
+        if (!msg?.inferenceResult) return null;
+        return <VizModal result={msg.inferenceResult} onClose={() => setShowViz(null)} />;
+      })()}
+
       {/* Settings Modal */}
       {showSettings && (
-        <Modal onClose={() => setShowSettings(false)} title="Generation Settings">
-          <div className="space-y-5">
-            <SliderSetting
-              label="Max Tokens"
-              value={settings.maxLength}
-              min={20}
-              max={256}
-              step={1}
-              onChange={(v) => setSettings((s) => ({ ...s, maxLength: v }))}
-              description="Maximum length of the generated response"
-            />
-            <SliderSetting
-              label="Temperature"
-              value={settings.temperature}
-              min={0.1}
-              max={1.5}
-              step={0.05}
-              onChange={(v) => setSettings((s) => ({ ...s, temperature: v }))}
-              description="Higher = more creative, Lower = more deterministic"
-              format={(v) => v.toFixed(2)}
-            />
-            <SliderSetting
-              label="Top-K Sampling"
-              value={settings.topK}
-              min={1}
-              max={100}
-              step={1}
-              onChange={(v) => setSettings((s) => ({ ...s, topK: v }))}
-              description="Number of highest probability tokens to keep"
-            />
-            <SliderSetting
-              label="Top-P (Nucleus)"
-              value={settings.topP}
-              min={0.1}
-              max={1.0}
-              step={0.05}
-              onChange={(v) => setSettings((s) => ({ ...s, topP: v }))}
-              description="Cumulative probability cutoff for token selection"
-              format={(v) => v.toFixed(2)}
-            />
-            <SliderSetting
-              label="Repetition Penalty"
-              value={settings.repetitionPenalty}
-              min={1.0}
-              max={2.0}
-              step={0.05}
-              onChange={(v) => setSettings((s) => ({ ...s, repetitionPenalty: v }))}
-              description="Penalize repeated tokens in the output"
-              format={(v) => v.toFixed(2)}
-            />
-          </div>
-        </Modal>
-      )}
-
-      {/* Model Info Modal */}
-      {showInfo && (
-        <Modal onClose={() => setShowInfo(false)} title="Model Architecture">
-          <div className="space-y-0">
-            <InfoRow label="Model" value={MODEL_INFO.name} />
-            <InfoRow label="Parameters" value={MODEL_INFO.parameters} highlight />
-            <InfoRow label="Architecture" value={MODEL_INFO.architecture} />
-            <InfoRow label="Task" value={MODEL_INFO.task} />
-            <InfoRow label="Encoder Layers" value={MODEL_INFO.layers.toString()} />
-            <InfoRow label="Hidden Dimension" value={MODEL_INFO.hiddenSize.toString()} />
-            <InfoRow label="Attention Heads" value={MODEL_INFO.attentionHeads.toString()} />
-            <InfoRow label="Vocabulary" value={MODEL_INFO.vocabularySize.toLocaleString() + " tokens"} />
-            <InfoRow label="Context Window" value={`${MODEL_INFO.contextLength} tokens`} />
-            <InfoRow label="Training Data" value={MODEL_INFO.trainingData} />
-            <InfoRow label="Model Size" value={MODEL_INFO.size} />
-          </div>
-          <div className="mt-5 p-4 rounded-xl bg-violet-500/[0.06] border border-violet-500/10">
-            <p className="text-xs text-white/50 leading-relaxed">
-              <span className="text-violet-400 font-semibold">FLAN-T5-Small</span> is a finetuned version of Google's T5-Small model, trained on a mixture of instruction tasks. Unlike GPT-style models that just predict the next token, this model is specifically designed to understand and follow instructions — making it much better at answering questions.
-            </p>
-          </div>
-          <div className="mt-3 p-4 rounded-xl bg-amber-500/[0.06] border border-amber-500/10">
-            <p className="text-xs text-white/50 leading-relaxed">
-              <span className="text-amber-400 font-semibold">Note:</span> With only 80M parameters, this model has limited knowledge. It works best for simple questions, definitions, math, and common knowledge. For complex topics, responses may be inaccurate.
-            </p>
-          </div>
+        <Modal onClose={() => setShowSettings(false)} title="Settings">
+          <p className="text-sm text-white/50">Settings coming soon!</p>
         </Modal>
       )}
     </div>
   );
 }
 
-/* ─── Sub-components ─────────────────────────────────────────────── */
+/* ─── Components ─────────────────────────────────────────────────── */
 
-function MessageBubble({ message, isLast }: { message: Message; isLast: boolean }) {
+function MessageBubble({
+  message,
+  onShowViz,
+}: {
+  message: Message;
+  onShowViz?: () => void;
+}) {
   if (message.role === "system") {
     return (
-      <div className="flex justify-center py-4">
-        <div className="max-w-md text-center px-5 py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-            <span className="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">MiniLLM</span>
+      <div className="flex justify-center py-3">
+        <div className="max-w-md text-center px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+          <div className="flex items-center justify-center gap-1.5 mb-1.5">
+            <Sparkles className="w-3 h-3 text-violet-400" />
+            <span className="text-[10px] font-semibold text-violet-400 uppercase tracking-wider">MiniLLM</span>
           </div>
-          <p className="text-sm text-white/50 leading-relaxed">{message.content}</p>
+          <p className="text-xs text-white/40 leading-relaxed">{message.content}</p>
         </div>
       </div>
     );
@@ -472,31 +359,34 @@ function MessageBubble({ message, isLast }: { message: Message; isLast: boolean 
 
   if (message.role === "user") {
     return (
-      <div className={`flex justify-end ${isLast ? "animate-in fade-in slide-in-from-bottom-2" : ""}`}>
+      <div className="flex justify-end">
         <div className="max-w-[75%]">
-          <div className="bg-gradient-to-br from-violet-600/90 to-fuchsia-600/90 rounded-2xl rounded-br-md px-4 py-3 shadow-lg shadow-violet-500/10">
-            <p className="text-sm text-white/95 leading-relaxed">{message.content}</p>
+          <div className="bg-gradient-to-br from-violet-600/80 to-fuchsia-600/80 rounded-xl rounded-br-sm px-3.5 py-2.5">
+            <p className="text-sm text-white/90 leading-relaxed">{message.content}</p>
           </div>
-          <p className="text-[10px] text-white/20 mt-1.5 text-right pr-1">
-            {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`flex gap-3 ${isLast ? "animate-in fade-in slide-in-from-bottom-2" : ""}`}>
-      <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center mt-0.5">
-        <Brain className="w-3.5 h-3.5 text-violet-400" />
+    <div className="flex gap-2.5">
+      <div className="flex-shrink-0 w-6 h-6 rounded-md bg-white/[0.05] flex items-center justify-center mt-0.5">
+        <Brain className="w-3 h-3 text-violet-400" />
       </div>
-      <div className="max-w-[75%]">
-        <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3">
-          <p className="text-sm text-white/80 leading-relaxed">{message.content}</p>
+      <div className="max-w-[80%]">
+        <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl rounded-bl-sm px-3.5 py-2.5">
+          <p className="text-sm text-white/75 leading-relaxed">{message.content}</p>
         </div>
-        <p className="text-[10px] text-white/20 mt-1.5 pl-1">
-          {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </p>
+        {onShowViz && (
+          <button
+            onClick={onShowViz}
+            className="mt-1.5 flex items-center gap-1.5 text-[10px] text-violet-400/60 hover:text-violet-400 transition-colors"
+          >
+            <Eye className="w-3 h-3" />
+            View transformer internals
+          </button>
+        )}
       </div>
     </div>
   );
@@ -504,110 +394,232 @@ function MessageBubble({ message, isLast }: { message: Message; isLast: boolean 
 
 function TypingIndicator() {
   return (
-    <div className="flex gap-3 animate-in fade-in">
-      <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center">
-        <Brain className="w-3.5 h-3.5 text-violet-400" />
+    <div className="flex gap-2.5">
+      <div className="flex-shrink-0 w-6 h-6 rounded-md bg-white/[0.05] flex items-center justify-center">
+        <Brain className="w-3 h-3 text-violet-400" />
       </div>
-      <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3.5">
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-bounce [animation-delay:0ms]" />
-          <div className="w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-bounce [animation-delay:150ms]" />
-          <div className="w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-bounce [animation-delay:300ms]" />
+      <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl rounded-bl-sm px-3.5 py-3">
+        <div className="flex items-center gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-violet-400/50 animate-bounce [animation-delay:0ms]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-violet-400/50 animate-bounce [animation-delay:150ms]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-violet-400/50 animate-bounce [animation-delay:300ms]" />
         </div>
       </div>
     </div>
   );
 }
 
-function StatItem({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="flex items-center justify-between py-1.5">
-      <div className="flex items-center gap-2 text-white/30">
-        {icon}
-        <span className="text-[11px]">{label}</span>
-      </div>
-      <span className={`text-[11px] font-mono font-medium ${accent ? "text-violet-400" : "text-white/60"}`}>
-        {value}
-      </span>
-    </div>
-  );
-}
+function VizModal({ result, onClose }: { result: InferenceResult; onClose: () => void }) {
+  const { tokens, forwardResult } = result;
+  const { attentionWeights, layerOutputs, inputEmbeddings } = forwardResult;
+  const dModel = MODEL_CONFIG.dModel;
+  const nLayers = MODEL_CONFIG.nLayers;
+  const nHeads = MODEL_CONFIG.nHeads;
+  const seqLen = tokens.length;
 
-function CapabilityBadge({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.04]">
-      <span className="text-emerald-400/70">{icon}</span>
-      <span className="text-[11px] text-white/40">{text}</span>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#111118] border border-white/[0.08] rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-violet-400" />
+            <h2 className="text-sm font-semibold text-white/80">Transformer Internals</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/[0.06]">
+            <X className="w-4 h-4 text-white/40" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Tokenization */}
+          <section>
+            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Hash className="w-3 h-3" /> Tokenization
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {tokens.map((token, i) => (
+                <div
+                  key={i}
+                  className="px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/20 text-[11px] font-mono text-violet-300"
+                >
+                  {token}
+                  <span className="text-violet-500/40 ml-1">#{i}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-white/20 mt-1.5">{seqLen} tokens → embedded into {dModel}-dim vectors</p>
+          </section>
+
+          {/* Input Embeddings Visualization */}
+          <section>
+            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <BarChart3 className="w-3 h-3" /> Input Embeddings (first 64 dims)
+            </h3>
+            <div className="space-y-1">
+              {tokens.slice(0, 8).map((token, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-[10px] text-white/30 w-16 truncate font-mono">{token}</span>
+                  <div className="flex-1 flex gap-[1px] h-4">
+                    {Array.from({ length: 64 }, (_, j) => {
+                      const val = inputEmbeddings[i * dModel + j] || 0;
+                      const intensity = Math.min(Math.abs(val) * 3, 1);
+                      const hue = val > 0 ? 270 : 200; // violet or blue
+                      return (
+                        <div
+                          key={j}
+                          className="flex-1 rounded-[1px]"
+                          style={{
+                            backgroundColor: `hsla(${hue}, 80%, 60%, ${intensity})`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Attention Patterns */}
+          <section>
+            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Network className="w-3 h-3" /> Attention Patterns (Layer 1, All Heads)
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              {Array.from({ length: Math.min(nHeads, 8) }, (_, h) => {
+                const attnLayer = attentionWeights[0]; // First layer
+                const offset = h * seqLen * seqLen;
+                return (
+                  <div key={h} className="bg-white/[0.02] rounded-lg p-2 border border-white/[0.04]">
+                    <p className="text-[9px] text-white/25 mb-1 text-center">Head {h + 1}</p>
+                    <div className="grid gap-[1px]" style={{ gridTemplateColumns: `repeat(${seqLen}, 1fr)` }}>
+                      {Array.from({ length: seqLen * seqLen }, (_, idx) => {
+                        const row = Math.floor(idx / seqLen);
+                        const col = idx % seqLen;
+                        const val = attnLayer[offset + row * seqLen + col] || 0;
+                        return (
+                          <div
+                            key={idx}
+                            className="aspect-square rounded-[1px]"
+                            style={{
+                              backgroundColor: `rgba(139, 92, 246, ${Math.min(val * 3, 1)})`,
+                              minWidth: '3px',
+                              minHeight: '3px',
+                            }}
+                            title={`${tokens[row]} → ${tokens[col]}: ${val.toFixed(3)}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Layer Outputs */}
+          <section>
+            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Layers className="w-3 h-3" /> Layer Outputs (CLS token, first 64 dims)
+            </h3>
+            <div className="space-y-1">
+              {layerOutputs.map((output, layerIdx) => (
+                <div key={layerIdx} className="flex items-center gap-2">
+                  <span className="text-[10px] text-white/30 w-12 font-mono">L{layerIdx + 1}</span>
+                  <div className="flex-1 flex gap-[1px] h-3">
+                    {Array.from({ length: 64 }, (_, j) => {
+                      const val = output[j] || 0; // CLS token is at index 0
+                      const intensity = Math.min(Math.abs(val) * 2, 1);
+                      const hue = 270 + layerIdx * 15;
+                      return (
+                        <div
+                          key={j}
+                          className="flex-1 rounded-[1px]"
+                          style={{
+                            backgroundColor: `hsla(${hue}, 70%, 55%, ${intensity})`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Stats */}
+          <section className="bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
+            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2">Inference Stats</h3>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="flex justify-between">
+                <span className="text-white/30">Method</span>
+                <span className="text-violet-400 font-mono">{result.method}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/30">Match Score</span>
+                <span className="text-violet-400 font-mono">{result.matchScore.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/30">Tokens</span>
+                <span className="text-violet-400 font-mono">{tokens.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/30">Layers</span>
+                <span className="text-violet-400 font-mono">{nLayers}</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
 
 function Modal({ onClose, title, children }: { onClose: () => void; title: string; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-      <div className="bg-[#13131a] border border-white/[0.08] rounded-2xl w-full max-w-md shadow-2xl shadow-black/50 animate-in zoom-in-95">
-        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#111118] border border-white/[0.08] rounded-2xl w-full max-w-md">
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <h2 className="text-sm font-semibold text-white/80">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
-          >
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/[0.06]">
             <X className="w-4 h-4 text-white/40" />
           </button>
         </div>
-        <div className="p-5 max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="p-4">{children}</div>
       </div>
     </div>
   );
 }
 
-function SliderSetting({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  description,
-  format,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-  description: string;
-  format?: (v: number) => string;
-}) {
-  const display = format ? format(value) : value.toString();
+function SidebarStat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
   return (
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-xs font-medium text-white/60">{label}</span>
-        <span className="text-xs font-mono text-violet-400">{display}</span>
+    <div className="flex items-center justify-between py-1">
+      <div className="flex items-center gap-1.5 text-white/25">
+        {icon}
+        <span className="text-[10px]">{label}</span>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full"
-      />
-      <p className="text-[10px] text-white/25 mt-1.5">{description}</p>
-    </div>
-  );
-}
-
-function InfoRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className="flex justify-between items-center py-2.5 border-b border-white/[0.04] last:border-0">
-      <span className="text-xs text-white/35">{label}</span>
-      <span className={`text-xs font-medium ${highlight ? "text-violet-400" : "text-white/70"}`}>
+      <span className={`text-[10px] font-mono font-medium ${accent ? "text-violet-400" : "text-white/50"}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+function ComponentBadge({ text }: { text: string }) {
+  return (
+    <div className="text-[10px] text-white/30 py-1 px-2 rounded bg-white/[0.02] border border-white/[0.03]">
+      {text}
+    </div>
+  );
+}
+
+function FeatureBadge({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-[10px] text-white/30 py-1">
+      <span className="text-emerald-400/60">{icon}</span>
+      {text}
     </div>
   );
 }

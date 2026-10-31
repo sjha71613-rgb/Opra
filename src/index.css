@@ -1,99 +1,6 @@
 @import "tailwindcss";
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-in-from-bottom-2 {
-  from { transform: translateY(8px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes zoom-in-95 {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.animate-in {
-  animation-fill-mode: both;
-}
-
-.fade-in {
-  animation-name: fade-in;
-  animation-duration: 200ms;
-  animation-timing-function: ease-out;
-}
-
-.slide-in-from-bottom-2 {
-  animation-name: slide-in-from-bottom-2;
-  animation-duration: 300ms;
-  animation-timing-function: ease-out;
-}
-
-.zoom-in-95 {
-  animation-name: zoom-in-95;
-  animation-duration: 200ms;
-  animation-timing-function: ease-out;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 5px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* Range input styling */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.06);
-  outline: none;
-  cursor: pointer;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #d946ef);
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  transition: box-shadow 150ms ease;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  box-shadow: 0 0 16px rgba(139, 92, 246, 0.6);
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #d946ef);
-  cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
-}
-
-/* Base styles */
+/* Base */
 html, body, #root {
   height: 100%;
   margin: 0;
@@ -102,14 +9,49 @@ html, body, #root {
 }
 
 body {
-  background: #0a0a0f;
+  background: #09090b;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Selection color */
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Selection */
 ::selection {
   background: rgba(139, 92, 246, 0.3);
   color: white;
+}
+
+/* Range inputs */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #d946ef);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
 }
