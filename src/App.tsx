@@ -4,10 +4,8 @@ import { MODEL_CONFIG, ACTUAL_PARAM_COUNT } from "./transformer/model";
 import {
   Brain,
   Send,
-  Settings,
   Cpu,
   Zap,
-  Loader2,
   X,
   Sparkles,
   Shield,
@@ -20,6 +18,9 @@ import {
   Network,
   BarChart3,
   Activity,
+  Lightbulb,
+  Target,
+  BookOpen,
 } from "lucide-react";
 
 interface Message {
@@ -36,7 +37,7 @@ function App() {
       id: "welcome",
       role: "system",
       content:
-        "Welcome! I'm MiniLLM — a transformer language model built from scratch with ~100M parameters, running entirely in your browser. Ask me anything about science, math, geography, or just say hello!",
+        "I'm MiniLLM — a transformer language model with ~100M parameters, built from scratch in TypeScript. I can answer questions about science, math, geography, history, and more. Try asking me something!",
       timestamp: new Date(),
     },
   ]);
@@ -45,8 +46,7 @@ function App() {
   const [modelStatus, setModelStatus] = useState<"loading" | "ready" | "error">("loading");
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadStatus, setLoadStatus] = useState("Initializing...");
-  const [showSettings, setShowSettings] = useState(false);
-  const [showViz, setShowViz] = useState<string | null>(null); // which message to visualize
+  const [showViz, setShowViz] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -130,11 +130,12 @@ function App() {
   };
 
   const clearChat = () => {
+    engineRef.current?.clearMemory();
     setMessages([
       {
         id: "welcome-" + Date.now(),
         role: "system",
-        content: "Chat cleared! Ask me anything — science, math, geography, or just say hi!",
+        content: "Chat cleared! Memory reset. Ask me anything!",
         timestamp: new Date(),
       },
     ]);
@@ -149,7 +150,6 @@ function App() {
         } flex-shrink-0 transition-all duration-300 overflow-hidden border-r border-white/[0.06] bg-[#0c0c0f]`}
       >
         <div className="w-72 h-full flex flex-col">
-          {/* Logo */}
           <div className="p-5 border-b border-white/[0.06]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
@@ -157,7 +157,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-sm font-bold text-white tracking-tight">MiniLLM</h1>
-                <p className="text-[10px] text-white/30 font-medium">Custom Transformer</p>
+                <p className="text-[10px] text-white/30 font-medium">Custom Transformer • Level 6</p>
               </div>
             </div>
           </div>
@@ -175,7 +175,7 @@ function App() {
                 }`}
               />
               <span className="text-[11px] font-medium text-white/50">
-                {modelStatus === "ready" ? "Model Active" : modelStatus === "error" ? "Error" : "Loading"}
+                {modelStatus === "ready" ? "All Systems Active" : modelStatus === "error" ? "Error" : "Booting..."}
               </span>
             </div>
             {modelStatus === "loading" && (
@@ -201,7 +201,7 @@ function App() {
 
           {/* Architecture */}
           <div className="p-4 flex-1 overflow-y-auto">
-            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3">Architecture</h3>
+            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3">Transformer</h3>
             <div className="space-y-2">
               <SidebarStat icon={<Hash className="w-3 h-3" />} label="Parameters" value="~100M" accent />
               <SidebarStat icon={<Layers className="w-3 h-3" />} label="Layers" value={MODEL_CONFIG.nLayers.toString()} />
@@ -211,28 +211,29 @@ function App() {
               <SidebarStat icon={<Network className="w-3 h-3" />} label="Vocab" value={MODEL_CONFIG.vocabSize.toString()} />
             </div>
 
-            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3 mt-5">Components</h3>
+            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3 mt-5">Brain</h3>
             <div className="space-y-1.5">
-              <ComponentBadge text="Multi-Head Attention" />
-              <ComponentBadge text="Feed-Forward Network" />
-              <ComponentBadge text="Layer Normalization" />
-              <ComponentBadge text="Residual Connections" />
-              <ComponentBadge text="Positional Encoding" />
-              <ComponentBadge text="GELU Activation" />
+              <FeatureBadge icon={<Target className="w-3 h-3" />} text="Intent Classification" />
+              <FeatureBadge icon={<BookOpen className="w-3 h-3" />} text="Knowledge Graph (500+ facts)" />
+              <FeatureBadge icon={<Lightbulb className="w-3 h-3" />} text="Compositional Reasoning" />
+              <FeatureBadge icon={<Activity className="w-3 h-3" />} text="Math Engine" />
+              <FeatureBadge icon={<Brain className="w-3 h-3" />} text="Conversational Memory" />
+              <FeatureBadge icon={<Sparkles className="w-3 h-3" />} text="Answer Composition" />
             </div>
 
-            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3 mt-5">Features</h3>
-            <div className="space-y-1.5">
-              <FeatureBadge icon={<Shield className="w-3 h-3" />} text="100% Local" />
-              <FeatureBadge icon={<Eye className="w-3 h-3" />} text="Live Visualization" />
-              <FeatureBadge icon={<Sparkles className="w-3 h-3" />} text="Custom Built" />
+            <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-3 mt-5">Try Asking</h3>
+            <div className="space-y-1.5 text-[10px] text-white/25">
+              <div className="py-1 px-2 rounded bg-white/[0.02]">"What is the capital of Japan?"</div>
+              <div className="py-1 px-2 rounded bg-white/[0.02]">"How many moons does Jupiter have?"</div>
+              <div className="py-1 px-2 rounded bg-white/[0.02]">"What is 15% of 200?"</div>
+              <div className="py-1 px-2 rounded bg-white/[0.02]">"Tell me about DNA"</div>
+              <div className="py-1 px-2 rounded bg-white/[0.02]">"What is the speed of light?"</div>
             </div>
           </div>
 
-          {/* Footer */}
           <div className="p-3 border-t border-white/[0.06]">
             <div className="text-[10px] text-white/20 text-center">
-              Built from scratch in TypeScript
+              Built from scratch • No external ML libs
             </div>
           </div>
         </div>
@@ -240,7 +241,6 @@ function App() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
         <header className="flex-shrink-0 h-12 border-b border-white/[0.06] flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
@@ -261,13 +261,12 @@ function App() {
           <button
             onClick={clearChat}
             className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors group"
-            title="Clear chat"
+            title="Clear chat & memory"
           >
             <RotateCcw className="w-4 h-4 text-white/25 group-hover:text-white/50" />
           </button>
         </header>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
             {messages.map((message) => (
@@ -285,7 +284,6 @@ function App() {
           </div>
         </div>
 
-        {/* Input */}
         <div className="flex-shrink-0 border-t border-white/[0.06] px-4 py-3">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5 focus-within:border-violet-500/30 focus-within:bg-white/[0.05] transition-all">
@@ -295,7 +293,7 @@ function App() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={modelStatus === "ready" ? "Ask me anything..." : "Loading model..."}
+                placeholder={modelStatus === "ready" ? "Ask me anything..." : "Loading..."}
                 disabled={modelStatus !== "ready" || isGenerating}
                 className="flex-1 bg-transparent text-sm text-white placeholder-white/20 focus:outline-none disabled:opacity-40"
               />
@@ -309,7 +307,7 @@ function App() {
             </div>
             <div className="flex items-center justify-between mt-2 px-1">
               <span className="text-[10px] text-white/20 flex items-center gap-1.5">
-                <Shield className="w-3 h-3" /> Runs locally in your browser
+                <Shield className="w-3 h-3" /> 100% local • No data leaves your browser
               </span>
               <span className="text-[10px] text-white/20">Enter to send</span>
             </div>
@@ -323,18 +321,18 @@ function App() {
         if (!msg?.inferenceResult) return null;
         return <VizModal result={msg.inferenceResult} onClose={() => setShowViz(null)} />;
       })()}
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <Modal onClose={() => setShowSettings(false)} title="Settings">
-          <p className="text-sm text-white/50">Settings coming soon!</p>
-        </Modal>
-      )}
     </div>
   );
 }
 
 /* ─── Components ─────────────────────────────────────────────────── */
+
+function formatMarkdown(text: string): string {
+  // Simple markdown-like formatting
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+    .replace(/\n/g, '<br/>');
+}
 
 function MessageBubble({
   message,
@@ -376,17 +374,27 @@ function MessageBubble({
       </div>
       <div className="max-w-[80%]">
         <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl rounded-bl-sm px-3.5 py-2.5">
-          <p className="text-sm text-white/75 leading-relaxed">{message.content}</p>
+          <div
+            className="text-sm text-white/75 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: formatMarkdown(message.content) }}
+          />
         </div>
-        {onShowViz && (
-          <button
-            onClick={onShowViz}
-            className="mt-1.5 flex items-center gap-1.5 text-[10px] text-violet-400/60 hover:text-violet-400 transition-colors"
-          >
-            <Eye className="w-3 h-3" />
-            View transformer internals
-          </button>
-        )}
+        <div className="flex items-center gap-3 mt-1.5">
+          {onShowViz && (
+            <button
+              onClick={onShowViz}
+              className="flex items-center gap-1 text-[10px] text-violet-400/60 hover:text-violet-400 transition-colors"
+            >
+              <Eye className="w-3 h-3" />
+              View internals
+            </button>
+          )}
+          {message.inferenceResult && (
+            <span className="text-[10px] text-white/15">
+              {message.inferenceResult.intent} • {(message.inferenceResult.confidence * 100).toFixed(0)}% confidence
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -410,33 +418,65 @@ function TypingIndicator() {
 }
 
 function VizModal({ result, onClose }: { result: InferenceResult; onClose: () => void }) {
-  const { tokens, forwardResult } = result;
+  const { tokens, forwardResult, reasoningSteps, sources, intent, confidence } = result;
   const { attentionWeights, layerOutputs, inputEmbeddings } = forwardResult;
   const dModel = MODEL_CONFIG.dModel;
-  const nLayers = MODEL_CONFIG.nLayers;
   const nHeads = MODEL_CONFIG.nHeads;
   const seqLen = tokens.length;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-[#111118] border border-white/[0.08] rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-violet-400" />
-            <h2 className="text-sm font-semibold text-white/80">Transformer Internals</h2>
+            <h2 className="text-sm font-semibold text-white/80">Transformer Internals & Reasoning</h2>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/[0.06]">
             <X className="w-4 h-4 text-white/40" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+          {/* Reasoning Steps */}
+          <section>
+            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Lightbulb className="w-3 h-3" /> Reasoning Chain
+            </h3>
+            <div className="space-y-1.5">
+              {reasoningSteps.map((step, i) => (
+                <div key={i} className="flex items-start gap-2 text-[11px]">
+                  <span className="text-violet-400/50 font-mono w-4 text-right">{i + 1}.</span>
+                  <div className="flex-1">
+                    <span className="text-white/50">{step.description}</span>
+                    {step.detail && <span className="text-white/25 ml-2">({step.detail})</span>}
+                  </div>
+                  <span className="text-[9px] text-white/20 px-1.5 py-0.5 rounded bg-white/[0.03]">{step.type}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Stats */}
+          <section className="grid grid-cols-3 gap-2">
+            <div className="bg-white/[0.02] rounded-lg p-2.5 border border-white/[0.04]">
+              <p className="text-[9px] text-white/25 uppercase">Intent</p>
+              <p className="text-sm text-violet-400 font-mono">{intent}</p>
+            </div>
+            <div className="bg-white/[0.02] rounded-lg p-2.5 border border-white/[0.04]">
+              <p className="text-[9px] text-white/25 uppercase">Confidence</p>
+              <p className="text-sm text-emerald-400 font-mono">{(confidence * 100).toFixed(0)}%</p>
+            </div>
+            <div className="bg-white/[0.02] rounded-lg p-2.5 border border-white/[0.04]">
+              <p className="text-[9px] text-white/25 uppercase">Sources</p>
+              <p className="text-sm text-white/60 font-mono">{sources.length}</p>
+            </div>
+          </section>
+
           {/* Tokenization */}
           <section>
             <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Hash className="w-3 h-3" /> Tokenization
+              <Hash className="w-3 h-3" /> Tokenization ({seqLen} tokens)
             </h3>
             <div className="flex flex-wrap gap-1.5">
               {tokens.map((token, i) => (
@@ -445,34 +485,30 @@ function VizModal({ result, onClose }: { result: InferenceResult; onClose: () =>
                   className="px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/20 text-[11px] font-mono text-violet-300"
                 >
                   {token}
-                  <span className="text-violet-500/40 ml-1">#{i}</span>
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-white/20 mt-1.5">{seqLen} tokens → embedded into {dModel}-dim vectors</p>
           </section>
 
-          {/* Input Embeddings Visualization */}
+          {/* Embeddings */}
           <section>
             <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <BarChart3 className="w-3 h-3" /> Input Embeddings (first 64 dims)
+              <BarChart3 className="w-3 h-3" /> Input Embeddings (first 64 of {dModel} dims)
             </h3>
             <div className="space-y-1">
-              {tokens.slice(0, 8).map((token, i) => (
+              {tokens.slice(0, 6).map((token, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <span className="text-[10px] text-white/30 w-16 truncate font-mono">{token}</span>
                   <div className="flex-1 flex gap-[1px] h-4">
                     {Array.from({ length: 64 }, (_, j) => {
                       const val = inputEmbeddings[i * dModel + j] || 0;
                       const intensity = Math.min(Math.abs(val) * 3, 1);
-                      const hue = val > 0 ? 270 : 200; // violet or blue
+                      const hue = val > 0 ? 270 : 200;
                       return (
                         <div
                           key={j}
                           className="flex-1 rounded-[1px]"
-                          style={{
-                            backgroundColor: `hsla(${hue}, 80%, 60%, ${intensity})`,
-                          }}
+                          style={{ backgroundColor: `hsla(${hue}, 80%, 60%, ${intensity})` }}
                         />
                       );
                     })}
@@ -482,23 +518,21 @@ function VizModal({ result, onClose }: { result: InferenceResult; onClose: () =>
             </div>
           </section>
 
-          {/* Attention Patterns */}
+          {/* Attention */}
           <section>
             <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Network className="w-3 h-3" /> Attention Patterns (Layer 1, All Heads)
+              <Network className="w-3 h-3" /> Attention Patterns (Layer 1)
             </h3>
             <div className="grid grid-cols-4 gap-2">
               {Array.from({ length: Math.min(nHeads, 8) }, (_, h) => {
-                const attnLayer = attentionWeights[0]; // First layer
+                const attnLayer = attentionWeights[0];
                 const offset = h * seqLen * seqLen;
                 return (
                   <div key={h} className="bg-white/[0.02] rounded-lg p-2 border border-white/[0.04]">
                     <p className="text-[9px] text-white/25 mb-1 text-center">Head {h + 1}</p>
                     <div className="grid gap-[1px]" style={{ gridTemplateColumns: `repeat(${seqLen}, 1fr)` }}>
                       {Array.from({ length: seqLen * seqLen }, (_, idx) => {
-                        const row = Math.floor(idx / seqLen);
-                        const col = idx % seqLen;
-                        const val = attnLayer[offset + row * seqLen + col] || 0;
+                        const val = attnLayer[offset + idx] || 0;
                         return (
                           <div
                             key={idx}
@@ -508,7 +542,6 @@ function VizModal({ result, onClose }: { result: InferenceResult; onClose: () =>
                               minWidth: '3px',
                               minHeight: '3px',
                             }}
-                            title={`${tokens[row]} → ${tokens[col]}: ${val.toFixed(3)}`}
                           />
                         );
                       })}
@@ -522,7 +555,7 @@ function VizModal({ result, onClose }: { result: InferenceResult; onClose: () =>
           {/* Layer Outputs */}
           <section>
             <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Layers className="w-3 h-3" /> Layer Outputs (CLS token, first 64 dims)
+              <Layers className="w-3 h-3" /> Hidden States per Layer (CLS token, 64 dims)
             </h3>
             <div className="space-y-1">
               {layerOutputs.map((output, layerIdx) => (
@@ -530,16 +563,14 @@ function VizModal({ result, onClose }: { result: InferenceResult; onClose: () =>
                   <span className="text-[10px] text-white/30 w-12 font-mono">L{layerIdx + 1}</span>
                   <div className="flex-1 flex gap-[1px] h-3">
                     {Array.from({ length: 64 }, (_, j) => {
-                      const val = output[j] || 0; // CLS token is at index 0
+                      const val = output[j] || 0;
                       const intensity = Math.min(Math.abs(val) * 2, 1);
                       const hue = 270 + layerIdx * 15;
                       return (
                         <div
                           key={j}
                           className="flex-1 rounded-[1px]"
-                          style={{
-                            backgroundColor: `hsla(${hue}, 70%, 55%, ${intensity})`,
-                          }}
+                          style={{ backgroundColor: `hsla(${hue}, 70%, 55%, ${intensity})` }}
                         />
                       );
                     })}
@@ -549,45 +580,18 @@ function VizModal({ result, onClose }: { result: InferenceResult; onClose: () =>
             </div>
           </section>
 
-          {/* Stats */}
+          {/* Sources */}
           <section className="bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
-            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2">Inference Stats</h3>
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <div className="flex justify-between">
-                <span className="text-white/30">Method</span>
-                <span className="text-violet-400 font-mono">{result.method}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/30">Match Score</span>
-                <span className="text-violet-400 font-mono">{result.matchScore.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/30">Tokens</span>
-                <span className="text-violet-400 font-mono">{tokens.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/30">Layers</span>
-                <span className="text-violet-400 font-mono">{nLayers}</span>
-              </div>
+            <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2">Knowledge Sources</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {sources.map((source, i) => (
+                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400/70 border border-violet-500/10">
+                  {source}
+                </span>
+              ))}
             </div>
           </section>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function Modal({ onClose, title, children }: { onClose: () => void; title: string; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#111118] border border-white/[0.08] rounded-2xl w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
-          <h2 className="text-sm font-semibold text-white/80">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/[0.06]">
-            <X className="w-4 h-4 text-white/40" />
-          </button>
-        </div>
-        <div className="p-4">{children}</div>
       </div>
     </div>
   );
@@ -607,17 +611,9 @@ function SidebarStat({ icon, label, value, accent }: { icon: React.ReactNode; la
   );
 }
 
-function ComponentBadge({ text }: { text: string }) {
-  return (
-    <div className="text-[10px] text-white/30 py-1 px-2 rounded bg-white/[0.02] border border-white/[0.03]">
-      {text}
-    </div>
-  );
-}
-
 function FeatureBadge({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-[10px] text-white/30 py-1">
+    <div className="flex items-center gap-1.5 text-[10px] text-white/35 py-1 px-2 rounded bg-white/[0.02] border border-white/[0.03]">
       <span className="text-emerald-400/60">{icon}</span>
       {text}
     </div>
