@@ -111,10 +111,10 @@ export function reason(question: string): ReasoningResult {
 function handleGreeting(intent: IntentResult, steps: ReasoningStep[]): ReasoningResult {
   steps.push({ type: 'response', description: 'Generating greeting' });
   const greetings = [
-    "Hello! 👋 I'm MiniLLM, your personal AI running right here in your browser. What can I help you with?",
-    "Hey there! Great to see you. I'm ready to answer questions about science, math, geography, and more!",
-    "Hi! Welcome to MiniLLM — a transformer model with ~100M parameters built from scratch. Ask me anything!",
-    "Hello! I'm your personal AI assistant. I can help with facts, math, definitions, and general knowledge. What's on your mind?",
+    "Hello! 👋 I'm OPRA, a hand-coded language model running right here in your browser. What can I help you with?",
+    "Hey there! I'm OPRA — built from scratch in TypeScript. I can answer questions about science, math, geography, and more!",
+    "Hi! Welcome to OPRA. Every line of my transformer code was written by hand — no external ML libraries. Ask me anything!",
+    "Hello! I'm OPRA, your personal AI. I can help with facts, math, definitions, and general knowledge. What's on your mind?",
   ];
   return {
     answer: greetings[Math.floor(Math.random() * greetings.length)],
@@ -160,19 +160,19 @@ function handleThanks(intent: IntentResult, steps: ReasoningStep[]): ReasoningRe
 
 function handleIdentity(intent: IntentResult, steps: ReasoningStep[]): ReasoningResult {
   steps.push({ type: 'response', description: 'Describing self' });
-  steps.push({ type: 'architecture', description: '6-layer transformer, 512 hidden dim, 8 attention heads' });
+  steps.push({ type: 'architecture', description: 'Hand-coded transformer implementation' });
   return {
-    answer: `I'm MiniLLM — a transformer-based language model built entirely from scratch in TypeScript. Here's what makes me tick:
+    answer: `I'm OPRA — a hand-coded transformer language model. Every component was built from scratch in TypeScript. Here's what makes me tick:
 
-🧠 **Architecture**: 6-layer transformer encoder-decoder with ~100M parameters
-⚡ **Components**: Multi-head attention (8 heads), feed-forward networks, layer normalization, residual connections
-🔤 **Tokenizer**: Word-level tokenizer with 500+ vocabulary
+🧠 **Architecture**: Custom transformer with multi-head attention, feed-forward networks, and layer normalization
+⚡ **Components**: All implemented from first principles — no external ML libraries
+🔤 **Tokenizer**: Word-level tokenizer with custom vocabulary
 📚 **Knowledge**: Curated knowledge graph with 500+ facts across science, geography, history, and more
-🔢 **Math**: Can evaluate arithmetic expressions, percentages, and more
+🔢 **Math**: Custom recursive descent parser for arithmetic expressions
 🧩 **Reasoning**: Intent classification → knowledge retrieval → answer composition
 🏠 **Privacy**: Everything runs 100% locally in your browser — no servers, no APIs
 
-You can click "View transformer internals" on any of my responses to see the actual attention patterns and embeddings in real-time!`,
+This is a proof-of-concept showing that a real language model can be hand-coded. You can click "View transformer internals" on any response to see the actual attention patterns and embeddings!`,
     confidence: 1.0,
     steps,
     intent,
@@ -436,7 +436,7 @@ function handleOpinion(intent: IntentResult, steps: ReasoningStep[]): ReasoningR
 function handleHelp(intent: IntentResult, steps: ReasoningStep[]): ReasoningResult {
   steps.push({ type: 'help', description: 'Providing help' });
   return {
-    answer: `Here's how to use MiniLLM:
+    answer: `Here's how to use OPRA:
 
 **Just ask me questions naturally!** For example:
 • "What is the capital of France?"
@@ -527,7 +527,7 @@ function handleFallback(intent: IntentResult, steps: ReasoningStep[], sources: s
   }
   
   return {
-    answer: `I'm not sure about that specific question. I'm a small model with a focused knowledge base covering science, geography, history, math, technology, and more.\n\nTry asking me:\n• "What is [topic]?" (e.g., "What is DNA?")\n• "How many [things] does [entity] have?" (e.g., "How many moons does Saturn have?")\n• Math questions (e.g., "What is 15% of 200?")\n• "Tell me about [entity]" (e.g., "Tell me about Jupiter")`,
+    answer: `I'm not sure about that specific question. I'm OPRA — a hand-coded model with a focused knowledge base covering science, geography, history, math, technology, and more.\n\nTry asking me:\n• "What is [topic]?" (e.g., "What is DNA?")\n• "How many [things] does [entity] have?" (e.g., "How many moons does Saturn have?")\n• Math questions (e.g., "What is 15% of 200?")\n• "Tell me about [entity]" (e.g., "Tell me about Jupiter")`,
     confidence: 0.2,
     steps,
     intent,
